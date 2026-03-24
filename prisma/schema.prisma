@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  pinHash      String?
+  createdAt    DateTime      @default(now())
+  posts        Post[]
+  goals        Goal[]
+  places       Place[]
+  messages     Message[]
+  meetupVotes  MeetupVote[]
+  postComments PostComment[]
+  goalComments GoalComment[]
+}
+
+model Post {
+  id        Int           @id @default(autoincrement())
+  content   String
+  imageUrl  String?
+  authorId  Int
+  author    User          @relation(fields: [authorId], references: [id])
+  likedBy   String        @default("[]")
+  comments  PostComment[]
+  createdAt DateTime      @default(now())
+}
+
+model PostComment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Meetup {
+  id            Int          @id @default(autoincrement())
+  title         String
+  description   String?
+  proposedDates String
+  votes         MeetupVote[]
+  status        String       @default("open")
+  confirmedDate String?
+  createdAt     DateTime     @default(now())
+}
+
+model MeetupVote {
+  id       Int    @id @default(autoincrement())
+  meetupId Int
+  meetup   Meetup @relation(fields: [meetupId], references: [id])
+  userId   Int
+  user     User   @relation(fields: [userId], references: [id])
+  date     String
+
+  @@unique([meetupId, userId, date])
+}
+
+model Goal {
+  id        Int           @id @default(autoincrement())
+  title     String
+  type      String
+  ownerId   Int?
+  owner     User?         @relation(fields: [ownerId], references: [id])
+  progress  Float         @default(0)
+  target    Float         @default(100)
+  unit      String?
+  category  String?
+  deadline  String?
+  comments  GoalComment[]
+  createdAt DateTime      @default(now())
+}
+
+model GoalComment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  goalId    Int
+  goal      Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Place {
+  id        Int      @id @default(autoincrement())
+  name      String
+  category  String?
+  address   String?
+  review    String?
+  rating    Int?
+  visitedAt String?
+  addedById Int
+  addedBy   User     @relation(fields: [addedById], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  content   String
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+}
