@@ -3,7 +3,7 @@ const cache: Record<string, any> = {};
 
 export async function prefetchAll() {
   const res = await fetch("/api/init");
-  if (!res.ok) return;
+  if (!res.ok) throw new Error("unauthorized");
   const data = await res.json();
   cache.auth = data.auth;
   cache.posts = data.posts;

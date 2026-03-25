@@ -12,18 +12,10 @@ export default function LoginPage() {
   const [step, setStep] = useState<Step>("select");
   const [checkingSession, setCheckingSession] = useState(true);
 
-  // 이미 로그인된 상태면 바로 홈으로
+  // 이미 로그인된 상태면 데이터 로드 후 바로 홈으로 (API 1회)
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then(async (d) => {
-        if (d.name) {
-          await prefetchAll();
-          router.replace("/home");
-        } else {
-          setCheckingSession(false);
-        }
-      })
+    prefetchAll()
+      .then(() => router.replace("/home"))
       .catch(() => setCheckingSession(false));
   }, [router]);
   const [selectedName, setSelectedName] = useState("");
