@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { consume } from "@/lib/prefetch";
 import { MEMBER_EMOJIS } from "@/lib/constants";
 
@@ -13,6 +13,10 @@ interface Place {
   rating: number | null;
   visitedAt: string | null;
   addedBy: { name: string };
+  totalUps: number;
+  totalDowns: number;
+  myUps: number;
+  myDowns: number;
 }
 
 const PLACE_CATEGORIES = ["식당", "카페", "술집", "여행지", "기타"];
@@ -25,6 +29,10 @@ export default function MapTab({ currentUser }: { currentUser: string }) {
     name: "", category: "식당", address: "", review: "", rating: "4", visitedAt: ""
   });
   const [submitting, setSubmitting] = useState(false);
+
+  // Vote debounce refs
+  const pendingVotes = useRef<Record<number, { ups: number; downs: number }>>({});
+  const timers = useRef<Record<number, NodeJS.Timeout>>({});
 
   const fetchPlaces = useCallback(async () => {
     try {
@@ -66,6 +74,56 @@ export default function MapTab({ currentUser }: { currentUser: string }) {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function flushVotes(placeId: number) {
+    const pending = pendingVotes.current[placeId];
+    if (!pending) return;
+    delete pendingVotes.current[placeId];
+
+    if (pending.ups > 0) {
+      await fetch(`/api/places/${placeId}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "up", count: pending.ups }),
+      });
+    }
+    if (pending.downs > 0) {
+      await fetch(`/api/places/${placeId}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "down", count: pending.downs }),
+      });
+    }
+  }
+
+  function handleVote(placeId: number, type: "up" | "down") {
+    // Check local limit
+    const place = places.find((p) => p.id === placeId);
+    if (!place) return;
+    const pending = pendingVotes.current[placeId] ?? { ups: 0, downs: 0 };
+    const myTotal = place.myUps + place.myDowns + pending.ups + pending.downs;
+    if (myTotal >= 100) return;
+
+    // Optimistic UI
+    setPlaces((prev) => prev.map((p) => {
+      if (p.id !== placeId) return p;
+      return {
+        ...p,
+        totalUps: p.totalUps + (type === "up" ? 1 : 0),
+        totalDowns: p.totalDowns + (type === "down" ? 1 : 0),
+        myUps: p.myUps + (type === "up" ? 1 : 0),
+        myDowns: p.myDowns + (type === "down" ? 1 : 0),
+      };
+    }));
+
+    // Accumulate pending
+    if (!pendingVotes.current[placeId]) pendingVotes.current[placeId] = { ups: 0, downs: 0 };
+    pendingVotes.current[placeId][type === "up" ? "ups" : "downs"]++;
+
+    // Debounce flush
+    clearTimeout(timers.current[placeId]);
+    timers.current[placeId] = setTimeout(() => flushVotes(placeId), 300);
   }
 
   const stars = (rating: number) => "⭐".repeat(rating) + "☆".repeat(5 - rating);
@@ -158,31 +216,70 @@ export default function MapTab({ currentUser }: { currentUser: string }) {
           <p className="text-sm mt-1">대항해시대처럼 지도를 채워나가요!</p>
         </div>
       ) : (
-        places.map((place) => (
-          <div key={place.id} className="bg-gray-800 rounded-2xl p-4 border border-gray-700">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{CATEGORY_EMOJI[place.category ?? "기타"] ?? "📍"}</span>
-                  <h3 className="text-white font-semibold">{place.name}</h3>
+        places.map((place) => {
+          const total = place.totalUps + place.totalDowns;
+          const upPercent = total > 0 ? Math.round((place.totalUps / total) * 100) : 50;
+          const myTotal = place.myUps + place.myDowns;
+
+          return (
+            <div key={place.id} className="bg-gray-800 rounded-2xl p-4 border border-gray-700">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{CATEGORY_EMOJI[place.category ?? "기타"] ?? "📍"}</span>
+                    <h3 className="text-white font-semibold">{place.name}</h3>
+                  </div>
+                  {place.address && (
+                    <p className="text-gray-500 text-xs mt-0.5 ml-7">{place.address}</p>
+                  )}
                 </div>
-                {place.address && (
-                  <p className="text-gray-500 text-xs mt-0.5 ml-7">{place.address}</p>
+                <div className="text-right">
+                  {place.rating && <p className="text-sm">{stars(place.rating)}</p>}
+                  {place.visitedAt && <p className="text-gray-500 text-xs mt-0.5">{place.visitedAt}</p>}
+                </div>
+              </div>
+              {place.review && (
+                <p className="text-gray-300 text-sm mt-2 ml-7 italic">&ldquo;{place.review}&rdquo;</p>
+              )}
+              <p className="text-gray-600 text-xs mt-2 ml-7">
+                {MEMBER_EMOJIS[place.addedBy.name]} {place.addedBy.name}
+              </p>
+
+              {/* 투표 영역 */}
+              <div className="mt-3 pt-3 border-t border-gray-700">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleVote(place.id, "up")}
+                    disabled={myTotal >= 100}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm font-medium transition-all active:scale-125 select-none bg-green-500/10 text-green-400 hover:bg-green-500/20 disabled:opacity-30"
+                  >
+                    👍 {place.totalUps}
+                  </button>
+
+                  <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-150"
+                      style={{ width: `${total > 0 ? upPercent : 50}%` }}
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => handleVote(place.id, "down")}
+                    disabled={myTotal >= 100}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm font-medium transition-all active:scale-125 select-none bg-red-500/10 text-red-400 hover:bg-red-500/20 disabled:opacity-30"
+                  >
+                    👎 {place.totalDowns}
+                  </button>
+                </div>
+                {myTotal > 0 && (
+                  <p className="text-gray-600 text-xs mt-1 text-center">
+                    나: 👍{place.myUps} 👎{place.myDowns} ({myTotal}/100)
+                  </p>
                 )}
               </div>
-              <div className="text-right">
-                {place.rating && <p className="text-sm">{stars(place.rating)}</p>}
-                {place.visitedAt && <p className="text-gray-500 text-xs mt-0.5">{place.visitedAt}</p>}
-              </div>
             </div>
-            {place.review && (
-              <p className="text-gray-300 text-sm mt-2 ml-7 italic">"{place.review}"</p>
-            )}
-            <p className="text-gray-600 text-xs mt-2 ml-7">
-              {MEMBER_EMOJIS[place.addedBy.name]} {place.addedBy.name}
-            </p>
-          </div>
-        ))
+          );
+        })
       )}
     </div>
   );

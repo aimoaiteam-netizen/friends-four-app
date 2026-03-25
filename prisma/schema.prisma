@@ -19,6 +19,7 @@ model User {
   meetupVotes  MeetupVote[]
   postComments PostComment[]
   goalComments GoalComment[]
+  placeVotes   PlaceVote[]
 }
 
 model Post {
@@ -93,7 +94,7 @@ model GoalComment {
 }
 
 model Place {
-  id        Int      @id @default(autoincrement())
+  id        Int          @id @default(autoincrement())
   name      String
   category  String?
   address   String?
@@ -101,8 +102,21 @@ model Place {
   rating    Int?
   visitedAt String?
   addedById Int
-  addedBy   User     @relation(fields: [addedById], references: [id])
-  createdAt DateTime @default(now())
+  addedBy   User         @relation(fields: [addedById], references: [id])
+  votes     PlaceVote[]
+  createdAt DateTime     @default(now())
+}
+
+model PlaceVote {
+  id      Int   @id @default(autoincrement())
+  placeId Int
+  place   Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  userId  Int
+  user    User  @relation(fields: [userId], references: [id])
+  ups     Int   @default(0)
+  downs   Int   @default(0)
+
+  @@unique([placeId, userId])
 }
 
 model Message {

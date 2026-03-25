@@ -124,6 +124,16 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
   }
 
   async function handleLike(postId: number) {
+    // Optimistic update
+    setPosts((prev) => prev.map((p) => {
+      if (p.id !== postId) return p;
+      const likedBy: string[] = JSON.parse(p.likedBy);
+      const newLikedBy = likedBy.includes(currentUser)
+        ? likedBy.filter((n) => n !== currentUser)
+        : [...likedBy, currentUser];
+      return { ...p, likedBy: JSON.stringify(newLikedBy) };
+    }));
+    // Sync with server
     const res = await fetch(`/api/posts/${postId}/like`, { method: "POST" });
     if (res.ok) {
       const updated = await res.json();
