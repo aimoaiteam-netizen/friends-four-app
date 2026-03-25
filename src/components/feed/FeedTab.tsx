@@ -71,6 +71,12 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    const name = file.name.toLowerCase();
+    if (name.endsWith(".heic") || name.endsWith(".heif")) {
+      alert("HEIC 형식은 지원되지 않아요. 갤러리에서 JPEG로 변환하거나 스크린샷으로 저장 후 올려주세요.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
     setCompressing(true);
     try {
       const dataUrl = await compressImage(file);
@@ -159,7 +165,7 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
                   className="hidden"
                   onChange={handleFileChange}
                   disabled={compressing}
