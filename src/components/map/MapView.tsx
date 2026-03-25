@@ -23,15 +23,31 @@ export default function MapView({ places }: { places: PlaceMarker[] }) {
   const markersRef = useRef<kakao.maps.Marker[]>([]);
 
   useEffect(() => {
-    if (!containerRef.current || typeof kakao === "undefined") return;
+    if (!containerRef.current) return;
 
-    kakao.maps.load(() => {
+    function init() {
+      if (typeof kakao === "undefined" || !kakao.maps) {
+        // SDK 아직 로드 안 됨 — 폴링
+        const check = setInterval(() => {
+          if (typeof kakao !== "undefined" && kakao.maps) {
+            clearInterval(check);
+            kakao.maps.load(() => createMap());
+          }
+        }, 200);
+        return () => clearInterval(check);
+      }
+      kakao.maps.load(() => createMap());
+    }
+
+    function createMap() {
+      if (!containerRef.current) return;
       const center = new kakao.maps.LatLng(37.5665, 126.978);
-      const map = new kakao.maps.Map(containerRef.current!, { center, level: 12 });
+      const map = new kakao.maps.Map(containerRef.current, { center, level: 12 });
       mapRef.current = map;
-
       updateMarkers(map, places);
-    });
+    }
+
+    init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
