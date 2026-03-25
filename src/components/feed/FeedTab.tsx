@@ -54,6 +54,7 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
   const [newContent, setNewContent] = useState("");
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [compressing, setCompressing] = useState(false);
+  const [converting, setConverting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -71,19 +72,22 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     let file = e.target.files?.[0];
     if (!file) return;
-    setCompressing(true);
     try {
       const name = file.name.toLowerCase();
       if (name.endsWith(".heic") || name.endsWith(".heif") || file.type === "image/heic" || file.type === "image/heif") {
-        const heic2any = (await import("heic2any")).default;
-        const blob = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.8 });
+        setConverting(true);
+        const { heicTo } = await import("heic-to");
+        const blob = await heicTo({ blob: file, type: "image/jpeg", quality: 0.8 });
         file = new File([blob as Blob], file.name.replace(/\.hei[cf]$/i, ".jpg"), { type: "image/jpeg" });
+        setConverting(false);
       }
+      setCompressing(true);
       const dataUrl = await compressImage(file);
       setImageDataUrl(dataUrl);
     } catch (err) {
       alert(err instanceof Error ? err.message : "이미지 처리 중 오류가 발생했어요.");
     } finally {
+      setConverting(false);
       setCompressing(false);
     }
   }
@@ -160,15 +164,15 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
                 </button>
               </div>
             ) : (
-              <label className={`flex items-center gap-2 cursor-pointer px-3 py-2 rounded-xl border border-dashed border-gray-600 hover:border-purple-500 text-gray-500 hover:text-purple-400 text-sm transition-colors ${compressing ? "opacity-50 pointer-events-none" : ""}`}>
-                <span>{compressing ? "⌛ 압축 중..." : "📷 사진 첨부"}</span>
+              <label className={`flex items-center gap-2 cursor-pointer px-3 py-2 rounded-xl border border-dashed border-gray-600 hover:border-purple-500 text-gray-500 hover:text-purple-400 text-sm transition-colors ${compressing || converting ? "opacity-50 pointer-events-none" : ""}`}>
+                <span>{converting ? "⌛ 변환 중..." : compressing ? "⌛ 압축 중..." : "📷 사진 첨부"}</span>
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
                   className="hidden"
                   onChange={handleFileChange}
-                  disabled={compressing}
+                  disabled={compressing || converting}
                 />
               </label>
             )}
@@ -183,7 +187,7 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
             </button>
             <button
               onClick={handlePost}
-              disabled={submitting || !newContent.trim() || compressing}
+              disabled={submitting || !newContent.trim() || compressing || converting}
               className="flex-1 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white text-sm font-medium"
             >
               {submitting ? "올리는 중..." : "올리기"}
