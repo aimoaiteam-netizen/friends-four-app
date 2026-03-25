@@ -14,26 +14,35 @@ interface Post {
 
 async function compressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const MAX = 800;
-      let { width, height } = img;
-      if (width > MAX) {
-        height = Math.round((height * MAX) / width);
-        width = MAX;
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return reject(new Error("canvas context unavailable"));
-      ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL("image/jpeg", 0.75));
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new window.Image();
+      img.onload = () => {
+        const MAX = 800;
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          const ratio = Math.min(MAX / width, MAX / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return reject(new Error("canvas context unavailable"));
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
+          resolve(dataUrl);
+        } catch (e) {
+          reject(e);
+        }
+      };
+      img.onerror = () => reject(new Error("이미지를 불러올 수 없어요. 다른 사진을 시도해 보세요."));
+      img.src = reader.result as string;
     };
-    img.onerror = reject;
-    img.src = url;
+    reader.onerror = () => reject(new Error("파일을 읽을 수 없어요."));
+    reader.readAsDataURL(file);
   });
 }
 
@@ -65,8 +74,8 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
     try {
       const dataUrl = await compressImage(file);
       setImageDataUrl(dataUrl);
-    } catch {
-      alert("이미지 처리 중 오류가 발생했어요.");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "이미지 처리 중 오류가 발생했어요.");
     } finally {
       setCompressing(false);
     }
