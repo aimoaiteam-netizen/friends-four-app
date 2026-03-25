@@ -10,6 +10,7 @@ interface Post {
   likedBy: string;
   createdAt: string;
   author: { name: string };
+  _count: { comments: number };
 }
 
 async function compressImage(file: File): Promise<string> {

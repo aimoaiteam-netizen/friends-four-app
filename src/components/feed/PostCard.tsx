@@ -10,6 +10,7 @@ interface Post {
   likedBy: string;
   createdAt: string;
   author: { name: string };
+  _count: { comments: number };
 }
 
 interface Comment {
@@ -124,7 +125,7 @@ export default function PostCard({ post, currentUser, onLike }: PostCardProps) {
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-purple-400 hover:bg-purple-400/10 px-3 py-1.5 rounded-xl transition-colors"
         >
           <span>💬</span>
-          <span>{commentsLoaded ? comments.length : "댓글"}</span>
+          <span>{commentsLoaded ? comments.length : post._count.comments}</span>
         </button>
 
         {likedBy.length > 0 && (

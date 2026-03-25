@@ -5,7 +5,7 @@ import { getSession } from "@/lib/auth";
 export async function GET() {
   const posts = await prisma.post.findMany({
     orderBy: { createdAt: "desc" },
-    include: { author: { select: { name: true } } },
+    include: { author: { select: { name: true } }, _count: { select: { comments: true } } },
   });
   return NextResponse.json(posts);
 }
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
   const post = await prisma.post.create({
     data: { content: content.trim(), imageUrl: imageUrl ?? null, authorId: session.userId },
-    include: { author: { select: { name: true } } },
+    include: { author: { select: { name: true } }, _count: { select: { comments: true } } },
   });
   return NextResponse.json(post, { status: 201 });
 }

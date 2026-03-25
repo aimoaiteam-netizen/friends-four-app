@@ -18,7 +18,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const updatedPost = await prisma.post.update({
     where: { id: Number(params.id) },
     data: { likedBy: JSON.stringify(updated) },
-    include: { author: { select: { name: true } } },
+    include: { author: { select: { name: true } }, _count: { select: { comments: true } } },
   });
   return NextResponse.json(updatedPost);
 }
