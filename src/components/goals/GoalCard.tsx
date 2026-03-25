@@ -15,6 +15,7 @@ interface Goal {
   category: string | null;
   deadline: string | null;
   owner: { name: string } | null;
+  _count: { comments: number };
 }
 
 interface Comment {
@@ -211,7 +212,8 @@ export default function GoalCard({ goal, currentUser, onUpdate, onDelete }: Goal
             onChange={handleSliderChange}
             onMouseUp={handleSliderCommit}
             onTouchEnd={handleSliderCommit}
-            className="relative w-full h-4 opacity-0 cursor-pointer z-10"
+            disabled={!isOwner}
+            className={`relative w-full h-4 opacity-0 z-10 ${isOwner ? "cursor-pointer" : "cursor-not-allowed"}`}
           />
         </div>
       </div>
@@ -222,7 +224,7 @@ export default function GoalCard({ goal, currentUser, onUpdate, onDelete }: Goal
           onClick={toggleComments}
           className="text-xs text-gray-500 hover:text-gray-300 flex items-center gap-1"
         >
-          💬 댓글 {commentsLoaded ? comments.length : ""}
+          💬 댓글 {commentsLoaded ? comments.length : goal._count.comments}
           <span className="text-gray-600">{showComments ? "▲" : "▼"}</span>
         </button>
 

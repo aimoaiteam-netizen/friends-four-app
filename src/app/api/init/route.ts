@@ -18,7 +18,7 @@ export async function GET() {
     }),
     prisma.goal.findMany({
       orderBy: [{ type: "asc" }, { createdAt: "desc" }],
-      include: { owner: { select: { name: true } } },
+      include: { owner: { select: { name: true } }, _count: { select: { comments: true } } },
     }),
     prisma.place.findMany({
       orderBy: { createdAt: "desc" },

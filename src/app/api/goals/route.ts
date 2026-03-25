@@ -5,7 +5,7 @@ import { getSession } from "@/lib/auth";
 export async function GET() {
   const goals = await prisma.goal.findMany({
     orderBy: [{ type: "asc" }, { createdAt: "desc" }],
-    include: { owner: { select: { name: true } } },
+    include: { owner: { select: { name: true } }, _count: { select: { comments: true } } },
   });
   return NextResponse.json(goals);
 }

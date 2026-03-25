@@ -13,10 +13,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (typeof body.progress !== "number") {
       return NextResponse.json({ error: "진행도 값을 입력해주세요." }, { status: 400 });
     }
+    const existing = await prisma.goal.findUnique({ where: { id: goalId } });
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (existing.ownerId !== session.userId) {
+      return NextResponse.json({ error: "본인의 목표만 수정할 수 있어요." }, { status: 403 });
+    }
     const goal = await prisma.goal.update({
       where: { id: goalId },
       data: { progress: body.progress },
-      include: { owner: { select: { name: true } } },
+      include: { owner: { select: { name: true } }, _count: { select: { comments: true } } },
     });
     return NextResponse.json(goal);
   }
@@ -37,7 +42,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       category: body.category !== undefined ? body.category : existing.category,
       deadline: body.deadline !== undefined ? body.deadline : existing.deadline,
     },
-    include: { owner: { select: { name: true } } },
+    include: { owner: { select: { name: true } }, _count: { select: { comments: true } } },
   });
   return NextResponse.json(goal);
 }

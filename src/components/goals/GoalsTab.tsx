@@ -17,6 +17,7 @@ interface Goal {
   category: string | null;
   deadline: string | null;
   owner: { name: string } | null;
+  _count: { comments: number };
 }
 
 export default function GoalsTab({ currentUser }: { currentUser: string }) {
