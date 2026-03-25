@@ -271,11 +271,6 @@ export default function MapTab({ currentUser }: { currentUser: string }) {
                     👎 {place.totalDowns}
                   </button>
                 </div>
-                {myTotal > 0 && (
-                  <p className="text-gray-600 text-xs mt-1 text-center">
-                    나: 👍{place.myUps} 👎{place.myDowns} ({myTotal}/100)
-                  </p>
-                )}
               </div>
             </div>
           );

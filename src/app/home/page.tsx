@@ -9,7 +9,7 @@ import GoalsTab from "@/components/goals/GoalsTab";
 import MapTab from "@/components/map/MapTab";
 import ChatTab from "@/components/chat/ChatTab";
 import { MEMBER_EMOJIS } from "@/lib/constants";
-import { consume } from "@/lib/prefetch";
+import { consume, prefetchTabs } from "@/lib/prefetch";
 
 type Tab = "feed" | "meetup" | "goals" | "map" | "chat";
 
@@ -35,9 +35,13 @@ export default function HomePage() {
     }
     fetch("/api/auth/me")
       .then((r) => r.json())
-      .then((d) => {
-        if (d.name) setCurrentUser(d.name);
-        else router.push("/");
+      .then(async (d) => {
+        if (d.name) {
+          await prefetchTabs();
+          setCurrentUser(d.name);
+        } else {
+          router.push("/");
+        }
       })
       .catch(() => router.push("/"));
   }, [router]);
