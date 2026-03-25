@@ -20,6 +20,16 @@ export async function GET() {
   return NextResponse.json(result);
 }
 
+export async function DELETE() {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const result = await prisma.place.deleteMany({
+    where: { OR: [{ address: null }, { address: "" }] },
+  });
+  return NextResponse.json({ deleted: result.count });
+}
+
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
