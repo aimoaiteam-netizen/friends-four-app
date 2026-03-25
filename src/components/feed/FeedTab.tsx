@@ -57,7 +57,34 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
   const [compressing, setCompressing] = useState(false);
   const [converting, setConverting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Pull-to-refresh
+  const touchStartY = useRef(0);
+  const [pullDistance, setPullDistance] = useState(0);
+
+  function onTouchStart(e: React.TouchEvent) {
+    if (window.scrollY === 0) {
+      touchStartY.current = e.touches[0].clientY;
+    }
+  }
+
+  function onTouchMove(e: React.TouchEvent) {
+    if (window.scrollY > 0 || touchStartY.current === 0) return;
+    const diff = e.touches[0].clientY - touchStartY.current;
+    if (diff > 0) setPullDistance(Math.min(diff, 100));
+  }
+
+  async function onTouchEnd() {
+    if (pullDistance > 60) {
+      setRefreshing(true);
+      await fetchPosts();
+      setRefreshing(false);
+    }
+    setPullDistance(0);
+    touchStartY.current = 0;
+  }
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -142,7 +169,21 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div
+      className="space-y-4"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      {/* 풀다운 새로고침 */}
+      {(pullDistance > 0 || refreshing) && (
+        <div
+          className="flex justify-center items-center text-gray-500 text-xs transition-all overflow-hidden"
+          style={{ height: refreshing ? 32 : pullDistance * 0.4 }}
+        >
+          {refreshing ? "새로고침 중..." : pullDistance > 60 ? "놓으면 새로고침" : "↓ 당겨서 새로고침"}
+        </div>
+      )}
       {/* 글쓰기 폼 */}
       {!showForm ? (
         <button

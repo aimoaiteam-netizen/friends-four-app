@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MEMBERS, MEMBER_EMOJIS } from "@/lib/constants";
 import { prefetchAll } from "@/lib/prefetch";
@@ -10,6 +10,22 @@ type Step = "select" | "setup-pin" | "enter-pin";
 export default function LoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("select");
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  // 이미 로그인된 상태면 바로 홈으로
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then(async (d) => {
+        if (d.name) {
+          await prefetchAll();
+          router.replace("/home");
+        } else {
+          setCheckingSession(false);
+        }
+      })
+      .catch(() => setCheckingSession(false));
+  }, [router]);
   const [selectedName, setSelectedName] = useState("");
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
@@ -83,6 +99,17 @@ export default function LoginPage() {
     const digits = value.replace(/\D/g, "").slice(0, 4);
     setter(digits);
     setError("");
+  }
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
+        <div className="text-center">
+          <div className="text-5xl mb-4">🤝</div>
+          <p className="text-gray-500">로딩 중...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
