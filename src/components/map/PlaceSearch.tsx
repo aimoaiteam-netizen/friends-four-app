@@ -18,6 +18,7 @@ export default function PlaceSearch({ onSelect }: PlaceSearchProps) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [sdkReady, setSdkReady] = useState(false);
+  const [selected, setSelected] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const psRef = useRef<kakao.maps.services.Places | null>(null);
 
@@ -63,6 +64,7 @@ export default function PlaceSearch({ onSelect }: PlaceSearchProps) {
   }, []);
 
   useEffect(() => {
+    if (selected) return;
     if (!query.trim() || query.length < 2 || !sdkReady) {
       setResults([]);
       setShowDropdown(false);
@@ -73,9 +75,10 @@ export default function PlaceSearch({ onSelect }: PlaceSearchProps) {
     timerRef.current = setTimeout(() => search(query), 300);
 
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [query, sdkReady, search]);
+  }, [query, sdkReady, search, selected]);
 
   function handleSelect(r: SearchResult) {
+    setSelected(true);
     onSelect(r);
     setQuery(r.name);
     setShowDropdown(false);
@@ -86,7 +89,7 @@ export default function PlaceSearch({ onSelect }: PlaceSearchProps) {
     <div className="relative">
       <input
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={(e) => { setQuery(e.target.value); setSelected(false); }}
         onFocus={() => results.length > 0 && setShowDropdown(true)}
         placeholder={sdkReady ? "장소 이름 검색 (예: 강남 맛집)" : "지도 로딩 중..."}
         disabled={!sdkReady}
