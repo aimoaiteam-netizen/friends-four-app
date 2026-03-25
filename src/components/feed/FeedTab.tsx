@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { consume } from "@/lib/prefetch";
 import PostCard from "./PostCard";
+import ImageCropper from "./ImageCropper";
 
 interface Post {
   id: number;
@@ -54,6 +55,7 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
   const [showForm, setShowForm] = useState(false);
   const [newContent, setNewContent] = useState("");
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
+  const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
   const [compressing, setCompressing] = useState(false);
   const [converting, setConverting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -113,9 +115,10 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
         file = new File([blob as Blob], file.name.replace(/\.hei[cf]$/i, ".jpg"), { type: "image/jpeg" });
         setConverting(false);
       }
-      setCompressing(true);
-      const dataUrl = await compressImage(file);
-      setImageDataUrl(dataUrl);
+      // Show cropper instead of directly compressing
+      const reader = new FileReader();
+      reader.onload = () => setRawImageSrc(reader.result as string);
+      reader.readAsDataURL(file);
     } catch (err) {
       alert(err instanceof Error ? err.message : "이미지 처리 중 오류가 발생했어요.");
     } finally {
@@ -124,10 +127,21 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
     }
   }
 
+  function handleCropComplete(croppedDataUrl: string) {
+    setImageDataUrl(croppedDataUrl);
+    setRawImageSrc(null);
+  }
+
+  function handleCropCancel() {
+    setRawImageSrc(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
   function handleCancel() {
     setShowForm(false);
     setNewContent("");
     setImageDataUrl(null);
+    setRawImageSrc(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -205,7 +219,13 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
 
           {/* 이미지 첨부 영역 */}
           <div>
-            {imageDataUrl ? (
+            {rawImageSrc ? (
+              <ImageCropper
+                imageSrc={rawImageSrc}
+                onCrop={handleCropComplete}
+                onCancel={handleCropCancel}
+              />
+            ) : imageDataUrl ? (
               <div className="relative">
                 <img
                   src={imageDataUrl}
