@@ -13,11 +13,21 @@ interface Post {
   _count: { comments: number };
 }
 
-interface Comment {
+interface Reply {
   id: number;
   content: string;
   createdAt: string;
   author: { name: string };
+  parentId: number;
+}
+
+interface CommentWithReplies {
+  id: number;
+  content: string;
+  createdAt: string;
+  author: { name: string };
+  parentId: null;
+  replies: Reply[];
 }
 
 interface PostCardProps {
@@ -46,10 +56,20 @@ export default function PostCard({ post, currentUser, onLike }: PostCardProps) {
   const liked = likedBy.includes(currentUser);
 
   const [showComments, setShowComments] = useState(false);
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<CommentWithReplies[]>([]);
   const [commentsLoaded, setCommentsLoaded] = useState(false);
   const [commentInput, setCommentInput] = useState("");
   const [sending, setSending] = useState(false);
+
+  const [showAllComments, setShowAllComments] = useState(false);
+  const [expandedReplies, setExpandedReplies] = useState<Set<number>>(new Set());
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [replyInput, setReplyInput] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
+
+  const totalCommentCount = commentsLoaded
+    ? comments.reduce((sum, c) => sum + 1 + c.replies.length, 0)
+    : post._count.comments;
 
   async function toggleComments() {
     setShowComments((prev) => !prev);
@@ -70,14 +90,41 @@ export default function PostCard({ post, currentUser, onLike }: PostCardProps) {
         body: JSON.stringify({ content: commentInput }),
       });
       if (res.ok) {
-        const c: Comment = await res.json();
-        setComments((prev) => [...prev, c]);
+        const c = await res.json();
+        setComments((prev) => [...prev, { ...c, parentId: null, replies: [] }]);
         setCommentInput("");
       }
     } finally {
       setSending(false);
     }
   }
+
+  async function handleSendReply(parentId: number) {
+    if (!replyInput.trim() || sendingReply) return;
+    setSendingReply(true);
+    try {
+      const res = await fetch(`/api/posts/${post.id}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: replyInput, parentId }),
+      });
+      if (res.ok) {
+        const reply = await res.json();
+        setComments((prev) =>
+          prev.map((c) =>
+            c.id === parentId ? { ...c, replies: [...c.replies, reply] } : c
+          )
+        );
+        setReplyInput("");
+        setReplyingTo(null);
+      }
+    } finally {
+      setSendingReply(false);
+    }
+  }
+
+  const visibleComments = showAllComments ? comments : comments.slice(0, 4);
+  const hiddenTopLevelCount = comments.length - visibleComments.length;
 
   return (
     <div className="bg-gray-800 rounded-2xl p-4 border border-gray-700">
@@ -125,7 +172,7 @@ export default function PostCard({ post, currentUser, onLike }: PostCardProps) {
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-purple-400 hover:bg-purple-400/10 px-3 py-1.5 rounded-xl transition-colors"
         >
           <span>💬</span>
-          <span>{commentsLoaded ? comments.length : post._count.comments}</span>
+          <span>{totalCommentCount}</span>
         </button>
 
         {likedBy.length > 0 && (
@@ -137,20 +184,93 @@ export default function PostCard({ post, currentUser, onLike }: PostCardProps) {
 
       {/* 댓글 섹션 */}
       {showComments && (
-        <div className="mt-3 space-y-2 pt-3 border-t border-gray-700">
+        <div className="mt-3 space-y-3 pt-3 border-t border-gray-700">
           {comments.length === 0 ? (
             <p className="text-xs text-gray-600">아직 댓글이 없어요.</p>
           ) : (
-            comments.map((c) => (
-              <div key={c.id} className="flex gap-2">
-                <span className="text-sm flex-shrink-0">{MEMBER_EMOJIS[c.author.name] ?? "👤"}</span>
-                <div className="flex-1">
-                  <span className="text-xs text-gray-400 font-medium">{c.author.name}</span>
-                  <span className="text-xs text-gray-600 ml-1.5">{shortTime(c.createdAt)}</span>
-                  <p className="text-xs text-gray-200 mt-0.5 leading-relaxed">{c.content}</p>
-                </div>
-              </div>
-            ))
+            <>
+              {visibleComments.map((c) => {
+                const repliesExpanded = expandedReplies.has(c.id);
+                const visibleReplies = repliesExpanded ? c.replies : c.replies.slice(0, 2);
+                const hiddenReplyCount = c.replies.length - visibleReplies.length;
+
+                return (
+                  <div key={c.id}>
+                    {/* 최상위 댓글 */}
+                    <div className="flex gap-2">
+                      <span className="text-sm flex-shrink-0">{MEMBER_EMOJIS[c.author.name] ?? "👤"}</span>
+                      <div className="flex-1">
+                        <span className="text-xs text-gray-400 font-medium">{c.author.name}</span>
+                        <span className="text-xs text-gray-600 ml-1.5">{shortTime(c.createdAt)}</span>
+                        <p className="text-xs text-gray-200 mt-0.5 leading-relaxed">{c.content}</p>
+                        <button
+                          onClick={() => { setReplyingTo(replyingTo === c.id ? null : c.id); setReplyInput(""); }}
+                          className="text-xs text-gray-500 hover:text-purple-400 mt-1"
+                        >
+                          답글
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 대댓글 영역 */}
+                    {c.replies.length > 0 && (
+                      <div className="ml-6 pl-3 border-l-2 border-gray-700 mt-2 space-y-2">
+                        {visibleReplies.map((r) => (
+                          <div key={r.id} className="flex gap-2">
+                            <span className="text-sm flex-shrink-0">{MEMBER_EMOJIS[r.author.name] ?? "👤"}</span>
+                            <div className="flex-1">
+                              <span className="text-xs text-gray-400 font-medium">{r.author.name}</span>
+                              <span className="text-xs text-gray-600 ml-1.5">{shortTime(r.createdAt)}</span>
+                              <p className="text-xs text-gray-200 mt-0.5 leading-relaxed">{r.content}</p>
+                            </div>
+                          </div>
+                        ))}
+                        {hiddenReplyCount > 0 && (
+                          <button
+                            onClick={() => setExpandedReplies((prev) => new Set(prev).add(c.id))}
+                            className="text-xs text-gray-500 hover:text-purple-400 py-0.5"
+                          >
+                            대댓글 {hiddenReplyCount}개 더 보기 &gt;
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 답글 입력 */}
+                    {replyingTo === c.id && (
+                      <div className="ml-6 pl-3 border-l-2 border-purple-600/40 mt-2">
+                        <div className="flex gap-2">
+                          <input
+                            value={replyInput}
+                            onChange={(e) => setReplyInput(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendReply(c.id); } }}
+                            placeholder="답글 입력..."
+                            autoFocus
+                            className="flex-1 bg-gray-700 rounded-xl px-3 py-1.5 text-xs text-gray-100 placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                          />
+                          <button
+                            onClick={() => handleSendReply(c.id)}
+                            disabled={sendingReply || !replyInput.trim()}
+                            className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white text-xs"
+                          >
+                            전송
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {hiddenTopLevelCount > 0 && (
+                <button
+                  onClick={() => setShowAllComments(true)}
+                  className="text-xs text-gray-500 hover:text-purple-400 py-0.5"
+                >
+                  댓글 {hiddenTopLevelCount}개 더 보기 &gt;
+                </button>
+              )}
+            </>
           )}
 
           {/* 댓글 입력 */}
