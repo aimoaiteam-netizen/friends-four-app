@@ -83,15 +83,21 @@ export default function HomePage() {
         style={{ paddingBottom: tab === "chat" ? "120px" : "80px" }}
         onClick={() => showLogout && setShowLogout(false)}
       >
-        {tab === "feed" && <FeedTab currentUser={currentUser} />}
-        {tab === "meetup" && <MeetupTab currentUser={currentUser} />}
-        {tab === "goals" && <GoalsTab currentUser={currentUser} />}
-        {tab === "map" && <MapTab currentUser={currentUser} />}
-        {tab === "chat" && (
-          <div style={{ height: "calc(100vh - 130px)" }}>
-            <ChatTab currentUser={currentUser} />
-          </div>
-        )}
+        <div style={{ display: tab === "feed" ? "block" : "none" }}>
+          <FeedTab currentUser={currentUser} />
+        </div>
+        <div style={{ display: tab === "meetup" ? "block" : "none" }}>
+          <MeetupTab currentUser={currentUser} />
+        </div>
+        <div style={{ display: tab === "goals" ? "block" : "none" }}>
+          <GoalsTab currentUser={currentUser} />
+        </div>
+        <div style={{ display: tab === "map" ? "block" : "none" }}>
+          <MapTab currentUser={currentUser} />
+        </div>
+        <div style={{ display: tab === "chat" ? "block" : "none", height: tab === "chat" ? "calc(100vh - 130px)" : undefined }}>
+          <ChatTab currentUser={currentUser} />
+        </div>
       </main>
 
       <TabNav activeTab={tab} onTabChange={setTab} />
