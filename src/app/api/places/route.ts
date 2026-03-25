@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { aggregatePlaceVotes } from "@/lib/placeUtils";
 
 export async function GET() {
   const session = await getSession();
@@ -8,16 +9,7 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
     include: { addedBy: { select: { name: true } }, votes: true },
   });
-
-  const result = places.map((p) => {
-    const totalUps = p.votes.reduce((s, v) => s + v.ups, 0);
-    const totalDowns = p.votes.reduce((s, v) => s + v.downs, 0);
-    const myVote = session ? p.votes.find((v) => v.userId === session.userId) : null;
-    const { votes: _, ...rest } = p;
-    return { ...rest, totalUps, totalDowns, myUps: myVote?.ups ?? 0, myDowns: myVote?.downs ?? 0 };
-  });
-
-  return NextResponse.json(result);
+  return NextResponse.json(aggregatePlaceVotes(places, session?.userId ?? null));
 }
 
 export async function DELETE(req: NextRequest) {

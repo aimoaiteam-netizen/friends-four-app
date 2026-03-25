@@ -15,40 +15,6 @@ interface Post {
   _count: { comments: number };
 }
 
-async function compressImage(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new window.Image();
-      img.onload = () => {
-        const MAX = 800;
-        let { width, height } = img;
-        if (width > MAX || height > MAX) {
-          const ratio = Math.min(MAX / width, MAX / height);
-          width = Math.round(width * ratio);
-          height = Math.round(height * ratio);
-        }
-        try {
-          const canvas = document.createElement("canvas");
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return reject(new Error("canvas context unavailable"));
-          ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
-          resolve(dataUrl);
-        } catch (e) {
-          reject(e);
-        }
-      };
-      img.onerror = () => reject(new Error("이미지를 불러올 수 없어요. 다른 사진을 시도해 보세요."));
-      img.src = reader.result as string;
-    };
-    reader.onerror = () => reject(new Error("파일을 읽을 수 없어요."));
-    reader.readAsDataURL(file);
-  });
-}
-
 export default function FeedTab({ currentUser }: { currentUser: string }) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +22,6 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
   const [newContent, setNewContent] = useState("");
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
-  const [compressing, setCompressing] = useState(false);
   const [converting, setConverting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -115,7 +80,6 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
         file = new File([blob as Blob], file.name.replace(/\.hei[cf]$/i, ".jpg"), { type: "image/jpeg" });
         setConverting(false);
       }
-      // Show cropper instead of directly compressing
       const reader = new FileReader();
       reader.onload = () => setRawImageSrc(reader.result as string);
       reader.readAsDataURL(file);
@@ -123,7 +87,6 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
       alert(err instanceof Error ? err.message : "이미지 처리 중 오류가 발생했어요.");
     } finally {
       setConverting(false);
-      setCompressing(false);
     }
   }
 
@@ -240,15 +203,15 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
                 </button>
               </div>
             ) : (
-              <label className={`flex items-center gap-2 cursor-pointer px-3 py-2 rounded-xl border border-dashed border-gray-600 hover:border-purple-500 text-gray-500 hover:text-purple-400 text-sm transition-colors ${compressing || converting ? "opacity-50 pointer-events-none" : ""}`}>
-                <span>{converting ? "⌛ 변환 중..." : compressing ? "⌛ 압축 중..." : "📷 사진 첨부"}</span>
+              <label className={`flex items-center gap-2 cursor-pointer px-3 py-2 rounded-xl border border-dashed border-gray-600 hover:border-purple-500 text-gray-500 hover:text-purple-400 text-sm transition-colors ${converting ? "opacity-50 pointer-events-none" : ""}`}>
+                <span>{converting ? "⌛ 변환 중..." : "📷 사진 첨부"}</span>
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
                   className="hidden"
                   onChange={handleFileChange}
-                  disabled={compressing || converting}
+                  disabled={converting}
                 />
               </label>
             )}
@@ -263,7 +226,7 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
             </button>
             <button
               onClick={handlePost}
-              disabled={submitting || !newContent.trim() || compressing || converting}
+              disabled={submitting || !newContent.trim() || converting}
               className="flex-1 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white text-sm font-medium"
             >
               {submitting ? "올리는 중..." : "올리기"}

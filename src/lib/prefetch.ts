@@ -13,8 +13,6 @@ export async function prefetchAll() {
   cache.messages = data.messages;
 }
 
-export const prefetchTabs = prefetchAll;
-
 export function consume(key: string) {
   const data = cache[key] ?? null;
   delete cache[key];

@@ -181,7 +181,7 @@ export default function GoalsTab({ currentUser }: { currentUser: string }) {
           </select>
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="block text-gray-500 text-xs mb-1">{form.direction === "decrease" ? "시작값" : "시작값"}</label>
+              <label className="block text-gray-500 text-xs mb-1">시작값</label>
               <input
                 type="number"
                 value={form.startValue}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { consume } from "@/lib/prefetch";
-import { MEMBER_EMOJIS } from "@/lib/constants";
+import { MEMBER_EMOJIS, PLACE_CATEGORY_EMOJI } from "@/lib/constants";
 import PlaceSearch from "./PlaceSearch";
 import MapView from "./MapView";
 
@@ -24,10 +24,6 @@ interface Place {
 }
 
 const PLACE_CATEGORIES = ["식당", "카페", "술집", "여행지", "기타"];
-const CATEGORY_EMOJI: Record<string, string> = {
-  식당: "🍽️", 카페: "☕", 술집: "🍺", 여행지: "🗺️", 기타: "📍"
-};
-
 type SortBy = "newest" | "date" | "popularity";
 type ViewMode = "map" | "list";
 
@@ -182,7 +178,7 @@ export default function MapTab({ currentUser }: { currentUser: string }) {
                   form.category === c ? "border-purple-500 bg-purple-500/20 text-purple-300" : "border-gray-700 text-gray-400"
                 }`}
               >
-                {CATEGORY_EMOJI[c]} {c}
+                {PLACE_CATEGORY_EMOJI[c]} {c}
               </button>
             ))}
           </div>
@@ -296,7 +292,7 @@ export default function MapTab({ currentUser }: { currentUser: string }) {
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">{CATEGORY_EMOJI[place.category ?? "기타"] ?? "📍"}</span>
+                    <span className="text-lg">{PLACE_CATEGORY_EMOJI[place.category ?? "기타"] ?? "📍"}</span>
                     <h3 className="text-white font-semibold">{place.name}</h3>
                   </div>
                   {place.address && (

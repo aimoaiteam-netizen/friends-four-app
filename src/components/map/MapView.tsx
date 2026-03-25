@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { PLACE_CATEGORY_EMOJI } from "@/lib/constants";
 
 interface PlaceMarker {
   id: number;
@@ -12,10 +13,6 @@ interface PlaceMarker {
   totalUps: number;
   totalDowns: number;
 }
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  식당: "🍽️", 카페: "☕", 술집: "🍺", 여행지: "🗺️", 기타: "📍"
-};
 
 export default function MapView({ places }: { places: PlaceMarker[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -73,7 +70,7 @@ export default function MapView({ places }: { places: PlaceMarker[] }) {
       const marker = new kakao.maps.Marker({ map, position: pos, title: p.name });
       markersRef.current.push(marker);
 
-      const emoji = CATEGORY_EMOJI[p.category ?? "기타"] ?? "📍";
+      const emoji = PLACE_CATEGORY_EMOJI[p.category ?? "기타"] ?? "📍";
       const stars = p.rating ? "⭐".repeat(p.rating) : "";
       const votes = `👍${p.totalUps} 👎${p.totalDowns}`;
       const content = `<div style="padding:8px 12px;font-size:13px;line-height:1.5;min-width:140px;color:#111">

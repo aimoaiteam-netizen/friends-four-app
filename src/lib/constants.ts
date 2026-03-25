@@ -16,3 +16,7 @@ export const GOAL_CATEGORIES = [
   { value: "독서", label: "독서 📚" },
   { value: "기타", label: "기타 ✨" },
 ] as const;
+
+export const PLACE_CATEGORY_EMOJI: Record<string, string> = {
+  식당: "🍽️", 카페: "☕", 술집: "🍺", 여행지: "🗺️", 기타: "📍",
+};
