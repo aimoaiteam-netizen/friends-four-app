@@ -69,18 +69,20 @@ model MeetupVote {
 }
 
 model Goal {
-  id        Int           @id @default(autoincrement())
-  title     String
-  type      String
-  ownerId   Int?
-  owner     User?         @relation(fields: [ownerId], references: [id])
-  progress  Float         @default(0)
-  target    Float         @default(100)
-  unit      String?
-  category  String?
-  deadline  String?
-  comments  GoalComment[]
-  createdAt DateTime      @default(now())
+  id         Int           @id @default(autoincrement())
+  title      String
+  type       String
+  direction  String        @default("increase")
+  ownerId    Int?
+  owner      User?         @relation(fields: [ownerId], references: [id])
+  startValue Float         @default(0)
+  progress   Float         @default(0)
+  target     Float         @default(100)
+  unit       String?
+  category   String?
+  deadline   String?
+  comments   GoalComment[]
+  createdAt  DateTime      @default(now())
 }
 
 model GoalComment {

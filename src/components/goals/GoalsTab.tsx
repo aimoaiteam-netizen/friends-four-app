@@ -9,6 +9,8 @@ interface Goal {
   id: number;
   title: string;
   type: string;
+  direction: string;
+  startValue: number;
   progress: number;
   target: number;
   unit: string | null;
@@ -22,7 +24,7 @@ export default function GoalsTab({ currentUser }: { currentUser: string }) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
-    title: "", type: "personal", target: "100", unit: "", category: "기타", deadline: ""
+    title: "", type: "personal", direction: "increase", startValue: "0", target: "100", unit: "", category: "기타", deadline: ""
   });
   const [submitting, setSubmitting] = useState(false);
   const [filter, setFilter] = useState<"all" | "personal" | "shared">("all");
@@ -42,6 +44,8 @@ export default function GoalsTab({ currentUser }: { currentUser: string }) {
     fetchGoals();
   }, [fetchGoals]);
 
+  const defaultForm = { title: "", type: "personal", direction: "increase", startValue: "0", target: "100", unit: "", category: "기타", deadline: "" };
+
   async function handleCreate() {
     if (!form.title.trim()) return;
     setSubmitting(true);
@@ -52,6 +56,8 @@ export default function GoalsTab({ currentUser }: { currentUser: string }) {
         body: JSON.stringify({
           title: form.title,
           type: form.type,
+          direction: form.direction,
+          startValue: parseFloat(form.startValue) || 0,
           target: parseFloat(form.target) || 100,
           unit: form.unit || null,
           category: form.category,
@@ -59,7 +65,7 @@ export default function GoalsTab({ currentUser }: { currentUser: string }) {
         }),
       });
       if (res.ok) {
-        setForm({ title: "", type: "personal", target: "100", unit: "", category: "기타", deadline: "" });
+        setForm(defaultForm);
         setShowForm(false);
         await fetchGoals();
       }
@@ -77,6 +83,13 @@ export default function GoalsTab({ currentUser }: { currentUser: string }) {
     if (res.ok) {
       const updated = await res.json();
       setGoals((prev) => prev.map((g) => (g.id === id ? updated : g)));
+    }
+  }
+
+  async function handleDelete(id: number) {
+    const res = await fetch(`/api/goals/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setGoals((prev) => prev.filter((g) => g.id !== id));
     }
   }
 
@@ -138,6 +151,25 @@ export default function GoalsTab({ currentUser }: { currentUser: string }) {
               🤝 공동
             </button>
           </div>
+          {/* 방향 선택 */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setForm({ ...form, direction: "increase" })}
+              className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                form.direction === "increase" ? "border-green-500 bg-green-500/20 text-green-300" : "border-gray-700 text-gray-400"
+              }`}
+            >
+              ↑ 늘리기
+            </button>
+            <button
+              onClick={() => setForm({ ...form, direction: "decrease" })}
+              className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                form.direction === "decrease" ? "border-red-500 bg-red-500/20 text-red-300" : "border-gray-700 text-gray-400"
+              }`}
+            >
+              ↓ 줄이기
+            </button>
+          </div>
           <select
             value={form.category}
             onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -148,23 +180,39 @@ export default function GoalsTab({ currentUser }: { currentUser: string }) {
             ))}
           </select>
           <div className="flex gap-2">
-            <input
-              type="number"
-              value={form.target}
-              onChange={(e) => setForm({ ...form, target: e.target.value })}
-              placeholder="목표값"
-              className="flex-1 bg-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-100 placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-purple-500"
-            />
-            <input
-              value={form.unit}
-              onChange={(e) => setForm({ ...form, unit: e.target.value })}
-              placeholder="단위 (kg, 회...)"
-              className="flex-1 bg-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-100 placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-purple-500"
-            />
+            <div className="flex-1">
+              <label className="block text-gray-500 text-xs mb-1">{form.direction === "decrease" ? "시작값" : "시작값"}</label>
+              <input
+                type="number"
+                value={form.startValue}
+                onChange={(e) => setForm({ ...form, startValue: e.target.value })}
+                placeholder="시작값"
+                className="w-full bg-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-100 placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-purple-500"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-gray-500 text-xs mb-1">목표값</label>
+              <input
+                type="number"
+                value={form.target}
+                onChange={(e) => setForm({ ...form, target: e.target.value })}
+                placeholder="목표값"
+                className="w-full bg-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-100 placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-purple-500"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-gray-500 text-xs mb-1">단위</label>
+              <input
+                value={form.unit}
+                onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                placeholder="kg, 회..."
+                className="w-full bg-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-100 placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-purple-500"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-gray-400 text-xs mb-1.5 font-medium">
-              🗓️ 마감 기한 (선택) — 등록 후 D-day 카운트다운 표시
+              🗓️ 마감 기한 (선택)
             </label>
             <input
               type="date"
@@ -200,7 +248,7 @@ export default function GoalsTab({ currentUser }: { currentUser: string }) {
         </div>
       ) : (
         filtered.map((g) => (
-          <GoalCard key={g.id} goal={g} onUpdate={handleUpdate} />
+          <GoalCard key={g.id} goal={g} currentUser={currentUser} onUpdate={handleUpdate} onDelete={handleDelete} />
         ))
       )}
     </div>
