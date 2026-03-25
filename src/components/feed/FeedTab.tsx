@@ -69,16 +69,16 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    let file = e.target.files?.[0];
     if (!file) return;
-    const name = file.name.toLowerCase();
-    if (name.endsWith(".heic") || name.endsWith(".heif")) {
-      alert("HEIC 형식은 지원되지 않아요. 갤러리에서 JPEG로 변환하거나 스크린샷으로 저장 후 올려주세요.");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      return;
-    }
     setCompressing(true);
     try {
+      const name = file.name.toLowerCase();
+      if (name.endsWith(".heic") || name.endsWith(".heif") || file.type === "image/heic" || file.type === "image/heif") {
+        const heic2any = (await import("heic2any")).default;
+        const blob = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.8 });
+        file = new File([blob as Blob], file.name.replace(/\.hei[cf]$/i, ".jpg"), { type: "image/jpeg" });
+      }
       const dataUrl = await compressImage(file);
       setImageDataUrl(dataUrl);
     } catch (err) {
@@ -165,7 +165,7 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  accept="image/*"
                   className="hidden"
                   onChange={handleFileChange}
                   disabled={compressing}
