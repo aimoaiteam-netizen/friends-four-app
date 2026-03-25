@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { consume } from "@/lib/prefetch";
 import { MEMBER_EMOJIS } from "@/lib/constants";
 
 interface Place {
@@ -34,7 +35,11 @@ export default function MapTab({ currentUser }: { currentUser: string }) {
     }
   }, []);
 
-  useEffect(() => { fetchPlaces(); }, [fetchPlaces]);
+  useEffect(() => {
+    const cached = consume("places");
+    if (cached) { setPlaces(cached); setLoading(false); return; }
+    fetchPlaces();
+  }, [fetchPlaces]);
 
   async function handleCreate() {
     if (!form.name.trim()) return;

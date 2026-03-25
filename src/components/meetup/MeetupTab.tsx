@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { consume } from "@/lib/prefetch";
 import MeetupCard from "./MeetupCard";
 
 interface Vote {
@@ -39,7 +40,11 @@ export default function MeetupTab({ currentUser }: { currentUser: string }) {
     }
   }, []);
 
-  useEffect(() => { fetchMeetups(); }, [fetchMeetups]);
+  useEffect(() => {
+    const cached = consume("meetups");
+    if (cached) { setMeetups(cached); setLoading(false); return; }
+    fetchMeetups();
+  }, [fetchMeetups]);
 
   function addDate() {
     if (dateInput && !dates.includes(dateInput)) {

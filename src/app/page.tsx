@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MEMBERS, MEMBER_EMOJIS } from "@/lib/constants";
+import { prefetchAll } from "@/lib/prefetch";
 
 type Step = "select" | "setup-pin" | "enter-pin";
 
@@ -14,6 +15,7 @@ export default function LoginPage() {
   const [confirmPin, setConfirmPin] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState("");
 
   async function handleNameSelect(name: string) {
     setError("");
@@ -35,6 +37,7 @@ export default function LoginPage() {
     if (pin !== confirmPin) return setError("PIN이 일치하지 않아요.");
     setError("");
     setLoading(true);
+    setLoadingText("설정 중...");
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
@@ -43,6 +46,8 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) return setError(data.error ?? "등록에 실패했습니다.");
+      setLoadingText("불러오는 중...");
+      await prefetchAll();
       router.push("/home");
     } catch {
       setError("오류가 발생했습니다.");
@@ -55,6 +60,7 @@ export default function LoginPage() {
     if (pin.length !== 4) return setError("PIN 4자리를 입력해주세요.");
     setError("");
     setLoading(true);
+    setLoadingText("확인 중...");
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -63,6 +69,8 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) return setError(data.error ?? "로그인에 실패했습니다.");
+      setLoadingText("불러오는 중...");
+      await prefetchAll();
       router.push("/home");
     } catch {
       setError("오류가 발생했습니다.");
@@ -143,7 +151,7 @@ export default function LoginPage() {
               disabled={loading || pin.length !== 4 || confirmPin.length !== 4}
               className="w-full mt-6 py-4 rounded-2xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-base transition-colors active:scale-95"
             >
-              {loading ? "설정 중..." : "완료 ✓"}
+              {loading ? loadingText : "완료 ✓"}
             </button>
           </div>
         )}
@@ -177,7 +185,7 @@ export default function LoginPage() {
               disabled={loading || pin.length !== 4}
               className="w-full mt-6 py-4 rounded-2xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-base transition-colors active:scale-95"
             >
-              {loading ? "확인 중..." : "입장 →"}
+              {loading ? loadingText : "입장 →"}
             </button>
           </div>
         )}

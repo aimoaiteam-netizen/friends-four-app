@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { consume } from "@/lib/prefetch";
 import { MEMBER_EMOJIS } from "@/lib/constants";
 
 interface Message {
@@ -35,7 +36,13 @@ export default function ChatTab({ currentUser }: { currentUser: string }) {
   useEffect(() => {
     if (!loadedRef.current) {
       loadedRef.current = true;
-      fetchMessages();
+      const cached = consume("messages");
+      if (cached && cached.length > 0) {
+        setMessages(cached);
+        setLastId(cached[cached.length - 1].id);
+      } else {
+        fetchMessages();
+      }
     }
     const interval = setInterval(() => {
       setLastId((prev) => { fetchMessages(prev); return prev; });

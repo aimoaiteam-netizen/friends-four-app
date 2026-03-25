@@ -9,6 +9,7 @@ import GoalsTab from "@/components/goals/GoalsTab";
 import MapTab from "@/components/map/MapTab";
 import ChatTab from "@/components/chat/ChatTab";
 import { MEMBER_EMOJIS } from "@/lib/constants";
+import { consume } from "@/lib/prefetch";
 
 type Tab = "feed" | "meetup" | "goals" | "map" | "chat";
 
@@ -27,6 +28,11 @@ export default function HomePage() {
   const [showLogout, setShowLogout] = useState(false);
 
   useEffect(() => {
+    const cached = consume("auth");
+    if (cached?.name) {
+      setCurrentUser(cached.name);
+      return;
+    }
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((d) => {

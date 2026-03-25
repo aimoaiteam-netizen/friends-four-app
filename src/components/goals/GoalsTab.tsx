@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { consume } from "@/lib/prefetch";
 import GoalCard from "./GoalCard";
 import { GOAL_CATEGORIES } from "@/lib/constants";
 
@@ -35,7 +36,11 @@ export default function GoalsTab({ currentUser }: { currentUser: string }) {
     }
   }, []);
 
-  useEffect(() => { fetchGoals(); }, [fetchGoals]);
+  useEffect(() => {
+    const cached = consume("goals");
+    if (cached) { setGoals(cached); setLoading(false); return; }
+    fetchGoals();
+  }, [fetchGoals]);
 
   async function handleCreate() {
     if (!form.title.trim()) return;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { consume } from "@/lib/prefetch";
 import PostCard from "./PostCard";
 
 interface Post {
@@ -67,7 +68,11 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
     }
   }, []);
 
-  useEffect(() => { fetchPosts(); }, [fetchPosts]);
+  useEffect(() => {
+    const cached = consume("posts");
+    if (cached) { setPosts(cached); setLoading(false); return; }
+    fetchPosts();
+  }, [fetchPosts]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     let file = e.target.files?.[0];
