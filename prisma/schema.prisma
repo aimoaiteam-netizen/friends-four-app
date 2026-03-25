@@ -101,6 +101,8 @@ model Place {
   review    String?
   rating    Int?
   visitedAt String?
+  latitude  Float?
+  longitude Float?
   addedById Int
   addedBy   User         @relation(fields: [addedById], references: [id])
   votes     PlaceVote[]
