@@ -96,7 +96,13 @@ function calcNumericPercent(goal: Goal, progress: number): number {
   return Math.min(100, Math.max(0, Math.round(((progress - goal.startValue) / total) * 100)));
 }
 
+function isIntegerStep(goal: Goal): boolean {
+  const step = goal.step ?? 1;
+  return step % 1 === 0;
+}
+
 export default function GoalCard({ goal, currentUser, onUpdate, onDelete }: GoalCardProps) {
+  const formatValue = (v: number) => isIntegerStep(goal) ? Math.round(v) : v.toFixed(1);
   const [localProgress, setLocalProgress] = useState(goal.progress);
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
@@ -205,8 +211,8 @@ export default function GoalCard({ goal, currentUser, onUpdate, onDelete }: Goal
       <div>
         <div className="flex items-end justify-between mb-3">
           <div>
-            <span className="text-3xl font-bold text-white">{elapsed}</span>
-            <span className="text-gray-500 text-lg ml-1">/ {targetDays}일</span>
+            <span className="text-xl font-bold text-white">{elapsed}</span>
+            <span className="text-gray-500 text-sm ml-1">/ {targetDays}일</span>
           </div>
           <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${
             percent >= 100 ? "text-green-400 bg-green-400/10" : "text-purple-400 bg-purple-400/10"
@@ -228,8 +234,8 @@ export default function GoalCard({ goal, currentUser, onUpdate, onDelete }: Goal
       <div>
         <div className="flex items-end justify-between mb-3">
           <div>
-            <span className="text-3xl font-bold text-white">{streak}</span>
-            <span className="text-gray-500 text-lg ml-1">일째</span>
+            <span className="text-xl font-bold text-white">{streak}</span>
+            <span className="text-gray-500 text-sm ml-1">일째</span>
           </div>
           <span className="text-xs font-semibold px-2 py-1 rounded-lg text-yellow-400 bg-yellow-400/10">
             🏆 최장 {best}일
@@ -301,7 +307,7 @@ export default function GoalCard({ goal, currentUser, onUpdate, onDelete }: Goal
             {canControl && (
               <button
                 onClick={() => handleNumericStep(isDecrease ? 1 : -1)}
-                className="w-10 h-10 rounded-full bg-gray-700 hover:bg-gray-600 text-gray-300 text-lg font-bold flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-bold flex items-center justify-center transition-colors"
               >
                 −
               </button>
@@ -325,10 +331,10 @@ export default function GoalCard({ goal, currentUser, onUpdate, onDelete }: Goal
                   setEditValue(String(localProgress));
                   setEditing(true);
                 }}
-                className="text-2xl font-bold text-white"
+                className="text-lg font-bold text-white"
               >
-                {localProgress % 1 === 0 ? localProgress : localProgress.toFixed(1)}
-                {goal.unit && <span className="text-gray-500 text-sm ml-1">{goal.unit}</span>}
+                {formatValue(localProgress)}
+                {goal.unit && <span className="text-gray-500 text-xs ml-1">{goal.unit}</span>}
               </button>
             )}
 
@@ -336,7 +342,7 @@ export default function GoalCard({ goal, currentUser, onUpdate, onDelete }: Goal
             {canControl && (
               <button
                 onClick={() => handleNumericStep(isDecrease ? -1 : 1)}
-                className="w-10 h-10 rounded-full bg-gray-700 hover:bg-gray-600 text-gray-300 text-lg font-bold flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-bold flex items-center justify-center transition-colors"
               >
                 +
               </button>
@@ -356,7 +362,7 @@ export default function GoalCard({ goal, currentUser, onUpdate, onDelete }: Goal
 
         <div className="flex items-center justify-between mb-1">
           <span className="text-xs text-gray-500">
-            목표: {goal.target}{goal.unit ?? ""}
+            목표: {formatValue(goal.target)}{goal.unit ?? ""}
           </span>
         </div>
         <ProgressBar percent={percent} />
