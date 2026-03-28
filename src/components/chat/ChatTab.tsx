@@ -83,6 +83,13 @@ export default function ChatTab({ currentUser }: { currentUser: string }) {
     return d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
   };
 
+  const dateStr = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" });
+  };
+
+  const dateKey = (dateStr: string) => new Date(dateStr).toDateString();
+
   const isSelf = (name: string) => name === currentUser;
 
   return (
@@ -95,11 +102,23 @@ export default function ChatTab({ currentUser }: { currentUser: string }) {
             <p className="text-sm mt-1">첫 번째 메시지를 보내봐요!</p>
           </div>
         ) : (
-          messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex items-end gap-2 ${isSelf(msg.author.name) ? "flex-row-reverse" : ""}`}
-            >
+          messages.map((msg, idx) => {
+            const prevMsg = idx > 0 ? messages[idx - 1] : null;
+            const showDate = !prevMsg || dateKey(msg.createdAt) !== dateKey(prevMsg.createdAt);
+            return (
+            <div key={msg.id}>
+              {showDate && (
+                <div className="flex items-center gap-3 my-4">
+                  <div className="flex-1 h-px bg-gray-800" />
+                  <span className="text-xs text-gray-500 bg-gray-900 px-3 py-1 rounded-full whitespace-nowrap">
+                    {dateStr(msg.createdAt)}
+                  </span>
+                  <div className="flex-1 h-px bg-gray-800" />
+                </div>
+              )}
+              <div
+                className={`flex items-end gap-2 ${isSelf(msg.author.name) ? "flex-row-reverse" : ""}`}
+              >
               {!isSelf(msg.author.name) && (
                 <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-sm flex-shrink-0">
                   {MEMBER_EMOJIS[msg.author.name] ?? "👤"}
@@ -121,7 +140,9 @@ export default function ChatTab({ currentUser }: { currentUser: string }) {
                 <p className="text-gray-600 text-xs mx-1">{timeStr(msg.createdAt)}</p>
               </div>
             </div>
-          ))
+            </div>
+            );
+          })
         )}
         <div ref={bottomRef} />
       </div>
