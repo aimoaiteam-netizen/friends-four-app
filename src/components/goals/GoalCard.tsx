@@ -41,9 +41,9 @@ interface GoalCardProps {
 }
 
 const TYPE_BADGES: Record<string, { label: string; color: string }> = {
-  date_count: { label: "📅 자동", color: "text-blue-400 bg-blue-400/10" },
+  date_count: { label: "📅 다짐", color: "text-blue-400 bg-blue-400/10" },
   infinite_race: { label: "♾️ 레이스", color: "text-orange-400 bg-orange-400/10" },
-  numeric: { label: "📊 수치", color: "text-green-400 bg-green-400/10" },
+  numeric: { label: "📊 달성", color: "text-green-400 bg-green-400/10" },
 };
 
 function getDday(deadline: string): { text: string; color: string } {
@@ -58,11 +58,7 @@ function getDday(deadline: string): { text: string; color: string } {
   if (days === 0) return { text: "D-Day", color: "text-red-400 bg-red-400/10" };
   if (days <= 7) return { text: `D-${days}`, color: "text-orange-400 bg-orange-400/10" };
   if (days <= 30) return { text: `D-${days}`, color: "text-purple-400 bg-purple-400/10" };
-
-  const months = Math.floor(days / 30);
-  const remainDays = days % 30;
-  const text = remainDays > 0 ? `${months}개월 ${remainDays}일` : `${months}개월`;
-  return { text, color: "text-blue-400 bg-blue-400/10" };
+  return { text: `D-${days}`, color: "text-blue-400 bg-blue-400/10" };
 }
 
 function timeStr(dateStr: string) {
