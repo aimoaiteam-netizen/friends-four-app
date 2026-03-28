@@ -69,20 +69,33 @@ model MeetupVote {
 }
 
 model Goal {
-  id         Int           @id @default(autoincrement())
-  title      String
-  type       String
-  direction  String        @default("increase")
-  ownerId    Int?
-  owner      User?         @relation(fields: [ownerId], references: [id])
-  startValue Float         @default(0)
-  progress   Float         @default(0)
-  target     Float         @default(100)
-  unit       String?
-  category   String?
-  deadline   String?
-  comments   GoalComment[]
-  createdAt  DateTime      @default(now())
+  id            Int           @id @default(autoincrement())
+  title         String
+  emoji         String        @default("🎯")
+  goalType      String        @default("numeric")
+  status        String        @default("active")
+  ownerId       Int?
+  owner         User?         @relation(fields: [ownerId], references: [id])
+
+  // 날짜 카운트 + 무한 레이스 공통
+  startDate     String?
+  targetDays    Int?
+
+  // 무한 레이스 전용
+  bestRecord    Int           @default(0)
+  raceStartDate String?
+
+  // 수치 목표 전용
+  startValue    Float         @default(0)
+  progress      Float         @default(0)
+  target        Float         @default(100)
+  unit          String?
+  step          Float?
+  deadline      String?
+
+  completedAt   DateTime?
+  comments      GoalComment[]
+  createdAt     DateTime      @default(now())
 }
 
 model GoalComment {

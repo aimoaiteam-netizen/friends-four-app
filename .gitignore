@@ -42,3 +42,4 @@ prisma/*.db
 # Screenshots
 *.png
 *.jpg
+.superpowers/

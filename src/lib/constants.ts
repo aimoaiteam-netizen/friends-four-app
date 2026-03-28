@@ -8,14 +8,15 @@ export const MEMBER_EMOJIS: Record<string, string> = {
   한성훈: "🦊",
 };
 
-export const GOAL_CATEGORIES = [
-  { value: "체중", label: "체중감량 🏃" },
-  { value: "운동", label: "운동 💪" },
-  { value: "저축", label: "저축 💰" },
-  { value: "금연", label: "금연 🚭" },
-  { value: "독서", label: "독서 📚" },
-  { value: "기타", label: "기타 ✨" },
+export const GOAL_TYPES = [
+  { value: "date_count", label: "📅 날짜 카운트", description: "금연 100일처럼 날짜를 세는 목표" },
+  { value: "infinite_race", label: "♾️ 무한 레이스", description: "라면 끊기처럼 끝없는 도전" },
+  { value: "numeric", label: "📊 수치 목표", description: "체중, 턱걸이 등 숫자로 측정하는 목표" },
 ] as const;
+
+export type GoalType = (typeof GOAL_TYPES)[number]["value"];
+
+export const GOAL_EMOJIS = ["🎯", "🚭", "🍜", "⚖️", "💪", "💰", "📚", "🏃", "🧘", "🎨", "✨"] as const;
 
 export const PLACE_CATEGORY_EMOJI: Record<string, string> = {
   식당: "🍽️", 카페: "☕", 술집: "🍺", 여행지: "🗺️", 기타: "📍",
