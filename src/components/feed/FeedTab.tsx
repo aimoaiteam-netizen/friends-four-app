@@ -8,7 +8,7 @@ import ImageCropper from "./ImageCropper";
 interface Post {
   id: number;
   content: string;
-  hasImage: boolean;
+  imageUrl: string | null;
   likedBy: string;
   createdAt: string;
   author: { name: string };

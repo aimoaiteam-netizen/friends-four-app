@@ -20,6 +20,5 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     data: { likedBy: JSON.stringify(updated) },
     include: { author: { select: { name: true } }, _count: { select: { comments: true } } },
   });
-  const { imageUrl: _, ...postLite } = updatedPost;
-  return NextResponse.json({ ...postLite, hasImage: !!updatedPost.imageUrl });
+  return NextResponse.json(updatedPost);
 }
