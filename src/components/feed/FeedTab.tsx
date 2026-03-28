@@ -20,7 +20,8 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [newContent, setNewContent] = useState("");
-  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
+  const [imageBlob, setImageBlob] = useState<Blob | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
   const [converting, setConverting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -90,8 +91,9 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
     }
   }
 
-  function handleCropComplete(croppedDataUrl: string) {
-    setImageDataUrl(croppedDataUrl);
+  function handleCropComplete(blob: Blob, previewUrl: string) {
+    setImageBlob(blob);
+    setImagePreviewUrl(previewUrl);
     setRawImageSrc(null);
   }
 
@@ -103,7 +105,9 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
   function handleCancel() {
     setShowForm(false);
     setNewContent("");
-    setImageDataUrl(null);
+    if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+    setImageBlob(null);
+    setImagePreviewUrl(null);
     setRawImageSrc(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
@@ -112,10 +116,19 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
     if (!newContent.trim()) return;
     setSubmitting(true);
     try {
+      let imageUrl: string | null = null;
+      if (imageBlob) {
+        const form = new FormData();
+        form.append("file", imageBlob, "image.jpg");
+        const uploadRes = await fetch("/api/images/upload", { method: "POST", body: form });
+        if (!uploadRes.ok) throw new Error("이미지 업로드 실패");
+        const { url } = await uploadRes.json();
+        imageUrl = url;
+      }
       const res = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newContent, imageUrl: imageDataUrl ?? null }),
+        body: JSON.stringify({ content: newContent, imageUrl }),
       });
       if (res.ok) {
         const post = await res.json();
@@ -188,15 +201,20 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
                 onCrop={handleCropComplete}
                 onCancel={handleCropCancel}
               />
-            ) : imageDataUrl ? (
+            ) : imagePreviewUrl ? (
               <div className="relative">
                 <img
-                  src={imageDataUrl}
+                  src={imagePreviewUrl}
                   alt="미리보기"
                   className="w-full rounded-xl object-cover max-h-48"
                 />
                 <button
-                  onClick={() => { setImageDataUrl(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                  onClick={() => {
+                    URL.revokeObjectURL(imagePreviewUrl);
+                    setImageBlob(null);
+                    setImagePreviewUrl(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
                   className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white text-sm flex items-center justify-center"
                 >
                   ×

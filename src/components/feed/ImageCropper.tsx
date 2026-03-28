@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 
 interface ImageCropperProps {
   imageSrc: string;
-  onCrop: (croppedDataUrl: string) => void;
+  onCrop: (blob: Blob, previewUrl: string) => void;
   onCancel: () => void;
 }
 
@@ -102,7 +102,14 @@ export default function ImageCropper({ imageSrc, onCrop, onCancel }: ImageCroppe
     const sh = containerSize.h / scale;
 
     ctx.drawImage(imgRef.current, sx, sy, sw, sh, 0, 0, outW, outH);
-    onCrop(canvas.toDataURL("image/jpeg", 0.7));
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return;
+        onCrop(blob, URL.createObjectURL(blob));
+      },
+      "image/jpeg",
+      0.7,
+    );
   }
 
   const minScale = Math.max(containerSize.w / (imgSize.w || 1), containerSize.h / (imgSize.h || 1));
