@@ -6,7 +6,7 @@ import { MEMBER_EMOJIS } from "@/lib/constants";
 interface Post {
   id: number;
   content: string;
-  imageUrl: string | null;
+  hasImage: boolean;
   likedBy: string;
   createdAt: string;
   author: { name: string };
@@ -145,10 +145,11 @@ export default function PostCard({ post, currentUser, onLike }: PostCardProps) {
       </p>
 
       {/* 이미지 */}
-      {post.imageUrl && (
+      {post.hasImage && (
         <img
-          src={post.imageUrl}
+          src={`/api/posts/${post.id}/image`}
           alt="첨부 이미지"
+          loading="lazy"
           className="w-full rounded-xl mb-3 object-cover max-h-72"
         />
       )}

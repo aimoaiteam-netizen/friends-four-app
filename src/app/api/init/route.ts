@@ -7,7 +7,7 @@ export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const [posts, meetups, goals, rawPlaces, messages] = await Promise.all([
+  const [rawPosts, meetups, goals, rawPlaces, messages] = await Promise.all([
     prisma.post.findMany({
       orderBy: { createdAt: "desc" },
       include: { author: { select: { name: true } }, _count: { select: { comments: true } } },
@@ -32,6 +32,10 @@ export async function GET() {
   ]);
 
   const places = aggregatePlaceVotes(rawPlaces, session.userId);
+  const posts = rawPosts.map(({ imageUrl, ...rest }) => ({
+    ...rest,
+    hasImage: !!imageUrl,
+  }));
 
   return NextResponse.json({
     auth: { userId: session.userId, name: session.name },
