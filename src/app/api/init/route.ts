@@ -17,7 +17,7 @@ export async function GET() {
       include: { votes: { include: { user: { select: { name: true } } } } },
     }),
     prisma.goal.findMany({
-      orderBy: [{ type: "asc" }, { createdAt: "desc" }],
+      orderBy: { createdAt: "desc" },
       include: { owner: { select: { name: true } }, _count: { select: { comments: true } } },
     }),
     prisma.place.findMany({
