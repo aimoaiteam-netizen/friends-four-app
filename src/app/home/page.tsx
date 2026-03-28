@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import TabNav from "@/components/TabNav";
 import FeedTab from "@/components/feed/FeedTab";
@@ -21,11 +21,41 @@ const TAB_TITLES: Record<Tab, string> = {
   chat: "채팅",
 };
 
+const ALL_TABS: Tab[] = ["feed", "meetup", "goals", "map", "chat"];
+
+function getLastSeen(): Record<Tab, string | null> {
+  const result: Record<string, string | null> = {};
+  for (const t of ALL_TABS) {
+    result[t] = typeof window !== "undefined" ? localStorage.getItem(`tab_seen_${t}`) : null;
+  }
+  return result as Record<Tab, string | null>;
+}
+
+function markSeen(tab: Tab) {
+  localStorage.setItem(`tab_seen_${tab}`, new Date().toISOString());
+}
+
 export default function HomePage() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("feed");
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [showLogout, setShowLogout] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState<Partial<Record<Tab, number>>>({});
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fetchUnread = useCallback(async () => {
+    const seen = getLastSeen();
+    const params = new URLSearchParams();
+    for (const t of ALL_TABS) {
+      if (seen[t]) params.set(t, seen[t]!);
+    }
+    try {
+      const res = await fetch(`/api/unread?${params.toString()}`);
+      if (res.ok) setUnreadCounts(await res.json());
+    } catch {
+      // ignore
+    }
+  }, []);
 
   useEffect(() => {
     const cached = consume("auth");
@@ -41,6 +71,23 @@ export default function HomePage() {
       })
       .catch(() => router.push("/"));
   }, [router]);
+
+  // Mark initial tab as seen + fetch unread on mount
+  useEffect(() => {
+    if (!currentUser) return;
+    markSeen(tab);
+    fetchUnread();
+    intervalRef.current = setInterval(fetchUnread, 30000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [currentUser, fetchUnread]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleTabChange(newTab: Tab) {
+    setTab(newTab);
+    markSeen(newTab);
+    setUnreadCounts((prev) => ({ ...prev, [newTab]: 0 }));
+  }
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -106,7 +153,7 @@ export default function HomePage() {
         </div>
       </main>
 
-      <TabNav activeTab={tab} onTabChange={setTab} />
+      <TabNav activeTab={tab} onTabChange={handleTabChange} unreadCounts={unreadCounts} />
     </div>
   );
 }
