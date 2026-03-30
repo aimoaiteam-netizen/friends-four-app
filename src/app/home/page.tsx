@@ -73,10 +73,9 @@ export default function HomePage() {
       .catch(() => router.push("/"));
   }, [router]);
 
-  // Mark initial tab as seen + fetch unread on mount
+  // Fetch unread on mount (don't markSeen — keep badge visible on initial tab)
   useEffect(() => {
     if (!currentUser) return;
-    markSeen(tab);
     fetchUnread();
     intervalRef.current = setInterval(fetchUnread, 30000);
     return () => {
@@ -86,11 +85,11 @@ export default function HomePage() {
 
   function handleTabChange(newTab: Tab) {
     const prevTab = tab;
-    setTab(newTab);
-    markSeen(newTab);
-    setUnreadCounts((prev) => ({ ...prev, [newTab]: 0 }));
-    // Update lastSeenMap for the tab we're leaving so red dots work on re-entry
+    // Mark the tab we're LEAVING as seen (not the one we're entering)
+    markSeen(prevTab);
+    setUnreadCounts((prev) => ({ ...prev, [prevTab]: 0 }));
     setLastSeenMap((prev) => ({ ...prev, [prevTab]: new Date().toISOString() }));
+    setTab(newTab);
   }
 
   async function handleLogout() {
