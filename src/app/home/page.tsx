@@ -153,7 +153,7 @@ export default function HomePage() {
           <MapTab currentUser={currentUser} lastSeen={lastSeenMap.map} />
         </div>
         <div style={{ display: tab === "chat" ? "block" : "none", height: tab === "chat" ? "calc(100vh - 130px)" : undefined }}>
-          <ChatTab currentUser={currentUser} lastSeen={lastSeenMap.chat} />
+          <ChatTab currentUser={currentUser} lastSeen={lastSeenMap.chat} visible={tab === "chat"} />
         </div>
       </main>
 

@@ -14,7 +14,7 @@ interface Message {
 const isNew = (createdAt: string, lastSeen: string | null) =>
   lastSeen ? new Date(createdAt) > new Date(lastSeen) : false;
 
-export default function ChatTab({ currentUser, lastSeen }: { currentUser: string; lastSeen: string | null }) {
+export default function ChatTab({ currentUser, lastSeen, visible }: { currentUser: string; lastSeen: string | null; visible: boolean }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -53,15 +53,14 @@ export default function ChatTab({ currentUser, lastSeen }: { currentUser: string
     return () => clearInterval(interval);
   }, [fetchMessages]);
 
-  const initialScrollDone = useRef(false);
+  const needsScroll = useRef(true);
+  // Scroll to bottom when tab becomes visible or new messages arrive
   useEffect(() => {
-    if (!initialScrollDone.current && messages.length > 0) {
-      bottomRef.current?.scrollIntoView({ behavior: "instant" });
-      initialScrollDone.current = true;
-    } else if (initialScrollDone.current) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (visible && messages.length > 0) {
+      bottomRef.current?.scrollIntoView({ behavior: needsScroll.current ? "instant" : "smooth" });
+      needsScroll.current = false;
     }
-  }, [messages]);
+  }, [messages, visible]);
 
   async function handleSend() {
     if (!input.trim() || sending) return;
