@@ -11,7 +11,10 @@ interface Message {
   author: { name: string };
 }
 
-export default function ChatTab({ currentUser }: { currentUser: string }) {
+const isNew = (createdAt: string, lastSeen: string | null) =>
+  lastSeen ? new Date(createdAt) > new Date(lastSeen) : false;
+
+export default function ChatTab({ currentUser, lastSeen }: { currentUser: string; lastSeen: string | null }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -50,8 +53,14 @@ export default function ChatTab({ currentUser }: { currentUser: string }) {
     return () => clearInterval(interval);
   }, [fetchMessages]);
 
+  const initialScrollDone = useRef(false);
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!initialScrollDone.current && messages.length > 0) {
+      bottomRef.current?.scrollIntoView({ behavior: "instant" });
+      initialScrollDone.current = true;
+    } else if (initialScrollDone.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
   async function handleSend() {
@@ -119,6 +128,9 @@ export default function ChatTab({ currentUser }: { currentUser: string }) {
               <div
                 className={`flex items-end gap-2 ${isSelf(msg.author.name) ? "flex-row-reverse" : ""}`}
               >
+              {isNew(msg.createdAt, lastSeen) && !isSelf(msg.author.name) && (
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0 mb-2" />
+              )}
               {!isSelf(msg.author.name) && (
                 <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-sm flex-shrink-0">
                   {MEMBER_EMOJIS[msg.author.name] ?? "👤"}

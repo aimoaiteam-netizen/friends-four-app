@@ -23,9 +23,13 @@ interface MeetupCardProps {
   meetup: Meetup;
   currentUser: string;
   onVote: (meetupId: number, date: string) => void;
+  lastSeen: string | null;
 }
 
-export default function MeetupCard({ meetup, currentUser, onVote }: MeetupCardProps) {
+const isNew = (createdAt: string, lastSeen: string | null) =>
+  lastSeen ? new Date(createdAt) > new Date(lastSeen) : false;
+
+export default function MeetupCard({ meetup, currentUser, onVote, lastSeen }: MeetupCardProps) {
   const dates: string[] = JSON.parse(meetup.proposedDates);
 
   const votesForDate = (date: string) =>
@@ -40,7 +44,10 @@ export default function MeetupCard({ meetup, currentUser, onVote }: MeetupCardPr
     <div className={`bg-gray-800 rounded-2xl p-4 border ${meetup.status === "confirmed" ? "border-green-500/50" : "border-gray-700"}`}>
       <div className="flex items-start justify-between mb-2">
         <div>
-          <h3 className="text-white font-semibold">{meetup.title}</h3>
+          <h3 className="text-white font-semibold flex items-center">
+            {meetup.title}
+            {isNew(meetup.createdAt, lastSeen) && <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 ml-1 flex-shrink-0" />}
+          </h3>
           {meetup.description && (
             <p className="text-gray-400 text-sm mt-0.5">{meetup.description}</p>
           )}

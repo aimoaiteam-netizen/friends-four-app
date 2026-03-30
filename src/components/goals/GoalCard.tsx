@@ -38,6 +38,7 @@ interface GoalCardProps {
   currentUser: string;
   onUpdate: (id: number, patch: Record<string, unknown>) => void;
   onDelete: (id: number) => void;
+  lastSeen: string | null;
 }
 
 const TYPE_BADGES: Record<string, { label: string; color: string }> = {
@@ -97,7 +98,10 @@ function isIntegerStep(goal: Goal): boolean {
   return step % 1 === 0;
 }
 
-export default function GoalCard({ goal, currentUser, onUpdate, onDelete }: GoalCardProps) {
+const isNew = (createdAt: string, lastSeen: string | null) =>
+  lastSeen ? new Date(createdAt) > new Date(lastSeen) : false;
+
+export default function GoalCard({ goal, currentUser, onUpdate, onDelete, lastSeen }: GoalCardProps) {
   const formatValue = (v: number) => isIntegerStep(goal) ? Math.round(v) : v.toFixed(1);
   const [localProgress, setLocalProgress] = useState(goal.progress);
   const [editing, setEditing] = useState(false);
@@ -223,8 +227,9 @@ export default function GoalCard({ goal, currentUser, onUpdate, onDelete }: Goal
 
   function renderInfiniteRace() {
     const streak = calcElapsedDays(goal.raceStartDate);
-    const best = goal.bestRecord;
-    const percent = best > 0 ? Math.min(100, Math.round((streak / best) * 100)) : (streak > 0 ? 50 : 0);
+    const displayBest = Math.max(goal.bestRecord, streak);
+    const percent = Math.min(100, Math.round((streak / 365) * 100));
+    const isOverYear = streak > 365;
 
     return (
       <div>
@@ -234,10 +239,24 @@ export default function GoalCard({ goal, currentUser, onUpdate, onDelete }: Goal
             <span className="text-gray-500 text-sm ml-1">일째</span>
           </div>
           <span className="text-xs font-semibold px-2 py-1 rounded-lg text-yellow-400 bg-yellow-400/10">
-            🏆 최장 {best}일
+            🏆 최장 {displayBest}일
           </span>
         </div>
-        <ProgressBar percent={percent} color="bg-orange-500" />
+        {isOverYear ? (
+          <div className="relative w-full">
+            <div className="w-full bg-gray-700 rounded-full h-2">
+              <div className="h-2 rounded-full bg-orange-500 w-full" />
+            </div>
+            <div className="w-full bg-transparent rounded-full h-2 absolute top-0 left-0">
+              <div
+                className="h-2 rounded-full bg-yellow-400 transition-all"
+                style={{ width: `${Math.min(100, Math.round(((streak - 365) / 365) * 100))}%` }}
+              />
+            </div>
+          </div>
+        ) : (
+          <ProgressBar percent={percent} color="bg-orange-500" />
+        )}
 
         {/* Surrender button */}
         {canControl && (
@@ -377,7 +396,10 @@ export default function GoalCard({ goal, currentUser, onUpdate, onDelete }: Goal
         <div className="flex items-center gap-2">
           <span className="text-xl">{goal.emoji}</span>
           <div>
-            <p className="text-white font-medium text-sm">{goal.title}</p>
+            <p className="text-white font-medium text-sm flex items-center">
+              {goal.title}
+              {isNew(goal.createdAt, lastSeen) && <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 ml-1 flex-shrink-0" />}
+            </p>
             <div className="flex items-center gap-2 mt-0.5">
               {goal.owner ? (
                 <span className="text-gray-500 text-xs">
@@ -442,6 +464,7 @@ export default function GoalCard({ goal, currentUser, onUpdate, onDelete }: Goal
                   <div>
                     <span className="text-xs text-gray-400 font-medium">{c.author.name}</span>
                     <span className="text-xs text-gray-600 ml-1">{timeStr(c.createdAt)}</span>
+                    {isNew(c.createdAt, lastSeen) && <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 ml-1 flex-shrink-0" />}
                     <p className="text-xs text-gray-200 mt-0.5">{c.content}</p>
                   </div>
                 </div>

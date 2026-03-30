@@ -21,7 +21,7 @@ interface Meetup {
   createdAt: string;
 }
 
-export default function MeetupTab({ currentUser }: { currentUser: string }) {
+export default function MeetupTab({ currentUser, lastSeen }: { currentUser: string; lastSeen: string | null }) {
   const [meetups, setMeetups] = useState<Meetup[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -162,7 +162,7 @@ export default function MeetupTab({ currentUser }: { currentUser: string }) {
         </div>
       ) : (
         meetups.map((m) => (
-          <MeetupCard key={m.id} meetup={m} currentUser={currentUser} onVote={handleVote} />
+          <MeetupCard key={m.id} meetup={m} currentUser={currentUser} onVote={handleVote} lastSeen={lastSeen} />
         ))
       )}
     </div>

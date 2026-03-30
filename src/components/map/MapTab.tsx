@@ -16,6 +16,7 @@ interface Place {
   visitedAt: string | null;
   latitude: number | null;
   longitude: number | null;
+  createdAt: string;
   addedBy: { name: string };
   totalUps: number;
   totalDowns: number;
@@ -29,7 +30,10 @@ type ViewMode = "map" | "list";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-export default function MapTab({ currentUser }: { currentUser: string }) {
+const isNew = (createdAt: string, lastSeen: string | null) =>
+  lastSeen ? new Date(createdAt) > new Date(lastSeen) : false;
+
+export default function MapTab({ currentUser, lastSeen }: { currentUser: string; lastSeen: string | null }) {
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -293,7 +297,10 @@ export default function MapTab({ currentUser }: { currentUser: string }) {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{PLACE_CATEGORY_EMOJI[place.category ?? "기타"] ?? "📍"}</span>
-                    <h3 className="text-white font-semibold">{place.name}</h3>
+                    <h3 className="text-white font-semibold flex items-center">
+                      {place.name}
+                      {isNew(place.createdAt, lastSeen) && <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 ml-1 flex-shrink-0" />}
+                    </h3>
                   </div>
                   {place.address && (
                     <p className="text-gray-500 text-xs mt-0.5 ml-7">{place.address}</p>

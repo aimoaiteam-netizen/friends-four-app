@@ -15,7 +15,7 @@ interface Post {
   _count: { comments: number };
 }
 
-export default function FeedTab({ currentUser }: { currentUser: string }) {
+export default function FeedTab({ currentUser, lastSeen }: { currentUser: string; lastSeen: string | null }) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -269,6 +269,7 @@ export default function FeedTab({ currentUser }: { currentUser: string }) {
             post={post}
             currentUser={currentUser}
             onLike={handleLike}
+            lastSeen={lastSeen}
           />
         ))
       )}

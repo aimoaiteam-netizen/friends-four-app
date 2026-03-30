@@ -32,7 +32,7 @@ type SubTab = "active" | "record";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
-export default function GoalsTab({ currentUser }: { currentUser: string }) {
+export default function GoalsTab({ currentUser, lastSeen }: { currentUser: string; lastSeen: string | null }) {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [subTab, setSubTab] = useState<SubTab>("active");
@@ -420,6 +420,7 @@ export default function GoalsTab({ currentUser }: { currentUser: string }) {
                   currentUser={currentUser}
                   onUpdate={handleUpdate}
                   onDelete={handleDelete}
+                  lastSeen={lastSeen}
                 />
               ))
           )}

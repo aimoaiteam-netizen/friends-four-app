@@ -41,6 +41,7 @@ export default function HomePage() {
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [showLogout, setShowLogout] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState<Partial<Record<Tab, number>>>({});
+  const [lastSeenMap, setLastSeenMap] = useState<Record<Tab, string | null>>(getLastSeen());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchUnread = useCallback(async () => {
@@ -84,9 +85,12 @@ export default function HomePage() {
   }, [currentUser, fetchUnread]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleTabChange(newTab: Tab) {
+    const prevTab = tab;
     setTab(newTab);
     markSeen(newTab);
     setUnreadCounts((prev) => ({ ...prev, [newTab]: 0 }));
+    // Update lastSeenMap for the tab we're leaving so red dots work on re-entry
+    setLastSeenMap((prev) => ({ ...prev, [prevTab]: new Date().toISOString() }));
   }
 
   async function handleLogout() {
@@ -137,19 +141,19 @@ export default function HomePage() {
         onClick={() => showLogout && setShowLogout(false)}
       >
         <div style={{ display: tab === "feed" ? "block" : "none" }}>
-          <FeedTab currentUser={currentUser} />
+          <FeedTab currentUser={currentUser} lastSeen={lastSeenMap.feed} />
         </div>
         <div style={{ display: tab === "meetup" ? "block" : "none" }}>
-          <MeetupTab currentUser={currentUser} />
+          <MeetupTab currentUser={currentUser} lastSeen={lastSeenMap.meetup} />
         </div>
         <div style={{ display: tab === "goals" ? "block" : "none" }}>
-          <GoalsTab currentUser={currentUser} />
+          <GoalsTab currentUser={currentUser} lastSeen={lastSeenMap.goals} />
         </div>
         <div style={{ display: tab === "map" ? "block" : "none" }}>
-          <MapTab currentUser={currentUser} />
+          <MapTab currentUser={currentUser} lastSeen={lastSeenMap.map} />
         </div>
         <div style={{ display: tab === "chat" ? "block" : "none", height: tab === "chat" ? "calc(100vh - 130px)" : undefined }}>
-          <ChatTab currentUser={currentUser} />
+          <ChatTab currentUser={currentUser} lastSeen={lastSeenMap.chat} />
         </div>
       </main>
 

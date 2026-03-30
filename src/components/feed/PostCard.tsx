@@ -34,6 +34,7 @@ interface PostCardProps {
   post: Post;
   currentUser: string;
   onLike: (id: number) => void;
+  lastSeen: string | null;
 }
 
 function relativeTime(dateStr: string) {
@@ -51,7 +52,10 @@ function shortTime(dateStr: string) {
   return d.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-export default function PostCard({ post, currentUser, onLike }: PostCardProps) {
+const isNew = (createdAt: string, lastSeen: string | null) =>
+  lastSeen ? new Date(createdAt) > new Date(lastSeen) : false;
+
+export default function PostCard({ post, currentUser, onLike, lastSeen }: PostCardProps) {
   const likedBy: string[] = JSON.parse(post.likedBy);
   const liked = likedBy.includes(currentUser);
 
@@ -134,7 +138,10 @@ export default function PostCard({ post, currentUser, onLike }: PostCardProps) {
           {MEMBER_EMOJIS[post.author.name] ?? "👤"}
         </div>
         <div>
-          <p className="text-white font-semibold text-sm">{post.author.name}</p>
+          <p className="text-white font-semibold text-sm flex items-center">
+            {post.author.name}
+            {isNew(post.createdAt, lastSeen) && <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 ml-1 flex-shrink-0" />}
+          </p>
           <p className="text-gray-500 text-xs">{relativeTime(post.createdAt)}</p>
         </div>
       </div>
@@ -155,29 +162,32 @@ export default function PostCard({ post, currentUser, onLike }: PostCardProps) {
       )}
 
       {/* 액션 바 */}
-      <div className="flex items-center gap-3 pt-2 border-t border-gray-700">
-        <button
-          onClick={() => onLike(post.id)}
-          className={`flex items-center gap-1.5 text-sm transition-colors px-3 py-1.5 rounded-xl ${
-            liked
-              ? "text-red-400 bg-red-400/10"
-              : "text-gray-500 hover:text-red-400 hover:bg-red-400/10"
-          }`}
-        >
-          <span>{liked ? "❤️" : "🤍"}</span>
-          {likedBy.length > 0 && <span>{likedBy.length}</span>}
-        </button>
+      <div className="pt-2 border-t border-gray-700">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onLike(post.id)}
+            className={`flex items-center gap-1.5 text-sm transition-colors px-3 py-1.5 rounded-xl ${
+              liked
+                ? "text-red-400 bg-red-400/10"
+                : "text-gray-500 hover:text-red-400 hover:bg-red-400/10"
+            }`}
+          >
+            <span>{liked ? "❤️" : "🤍"}</span>
+            {likedBy.length > 0 && <span>{likedBy.length}</span>}
+          </button>
 
-        <button
-          onClick={toggleComments}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-purple-400 hover:bg-purple-400/10 px-3 py-1.5 rounded-xl transition-colors"
-        >
-          <span>💬</span>
-          <span>{totalCommentCount}</span>
-        </button>
+          <button
+            onClick={toggleComments}
+            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-purple-400 hover:bg-purple-400/10 px-3 py-1.5 rounded-xl transition-colors"
+          >
+            <span>💬</span>
+            <span>{totalCommentCount}</span>
+            {isNew(post.createdAt, lastSeen) && <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 ml-1 flex-shrink-0" />}
+          </button>
+        </div>
 
         {likedBy.length > 0 && (
-          <p className="text-gray-600 text-xs flex-1 truncate">
+          <p className="text-gray-500 text-xs mt-1.5 ml-1 truncate">
             {likedBy.join(", ")}
           </p>
         )}
@@ -203,6 +213,7 @@ export default function PostCard({ post, currentUser, onLike }: PostCardProps) {
                       <div className="flex-1">
                         <span className="text-xs text-gray-400 font-medium">{c.author.name}</span>
                         <span className="text-xs text-gray-600 ml-1.5">{shortTime(c.createdAt)}</span>
+                        {isNew(c.createdAt, lastSeen) && <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 ml-1 flex-shrink-0" />}
                         <p className="text-xs text-gray-200 mt-0.5 leading-relaxed">{c.content}</p>
                         <button
                           onClick={() => { setReplyingTo(replyingTo === c.id ? null : c.id); setReplyInput(""); }}
@@ -222,6 +233,7 @@ export default function PostCard({ post, currentUser, onLike }: PostCardProps) {
                             <div className="flex-1">
                               <span className="text-xs text-gray-400 font-medium">{r.author.name}</span>
                               <span className="text-xs text-gray-600 ml-1.5">{shortTime(r.createdAt)}</span>
+                              {isNew(r.createdAt, lastSeen) && <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 ml-1 flex-shrink-0" />}
                               <p className="text-xs text-gray-200 mt-0.5 leading-relaxed">{r.content}</p>
                             </div>
                           </div>
